@@ -10,8 +10,11 @@ options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
 driver = webdriver.Chrome(executable_path='chromedriver.exe', options=options)
 
-url = 'https://www.bestbuy.com/site/nintendo-switch-oled-model-w-white-joy-con-white/6470923.p?skuId=6470923'
-# url = 'https://www.bestbuy.com/site/philips-norelco-5300-wet-dry-electric-shaver-black-navy-blue/6384519.p?skuId=6384519'
+switch_oled_url = 'https://www.bestbuy.com/site/nintendo-switch-oled-model-w-white-joy-con-white/6470923.p?skuId=6470923'
+ps5_url = 'https://www.bestbuy.com/site/sony-playstation-5-digital-edition-console/6430161.p?skuId=6430161'
+
+# SET WHICH PRODUCT TO SNIPE
+url = ps5_url
 
 driver.get(url)
 
