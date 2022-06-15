@@ -1,6 +1,7 @@
 import datetime as dt
 import pandas as pd
 import win32com.client
+import os, sys
 from cal_setup import get_calendar_service
 
 def get_outlook_calendar(begin, end):
@@ -144,7 +145,13 @@ def main():
 
     outlook_cal = get_outlook_calendar(begin, end)
     outlook_events = get_outlook_events(outlook_cal)
-    google_events = get_google_events(begin, end)
+
+    try:
+        google_events = get_google_events(begin, end)
+
+    except:
+        os.remove('./token.pickle')
+        google_events = get_google_events(begin, end)
 
     full_merge = outlook_events.merge(google_events, on=['subject','start','end'], how='outer', indicator=True)
     full_merge.to_excel('last_full_merge.xlsx')
