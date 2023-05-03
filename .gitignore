@@ -131,4 +131,4 @@ dmypy.json
 # Other
 credentials.json
 token.pickle
-last_full_merge.xlsx
+.xlsx
