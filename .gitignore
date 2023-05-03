@@ -131,4 +131,6 @@ dmypy.json
 # Other
 credentials.json
 token.pickle
-.xlsx
+last_all_events_merged_list.xlsx
+last_cancelled_event_list.xlsx
+last_missing_event_list.xlsx
