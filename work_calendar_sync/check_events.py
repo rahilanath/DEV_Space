@@ -14,25 +14,21 @@ def get_outlook_calendar(begin, end):
 
 def get_outlook_events(calendar):
     events = [evt for evt in calendar if evt.end.year == dt.date.today().year]
-    #  and 'OOO' not in evt.subject.upper() and 'out of office' not in evt.subject.lower()]
     cal_subject = [evt.subject for evt in events]
     cal_start = [evt.start for evt in events]
     cal_end = [evt.end for evt in events]
-    cal_duration = [evt.duration for evt in events]
     cal_category = [evt.categories for evt in events]
 
     df = pd.DataFrame({'subject': cal_subject,
                        'start': cal_start,
                        'end': cal_end,
-                       'duration': cal_duration,
                        'category': cal_category})
     
     df['subject'] = df['subject'].astype(object)
     df['start'] = df['start'].dt.tz_convert(None)
     df['end'] = df['end'].dt.tz_convert(None)
     df['category'] = df['category'].astype(object)
-
-    return(df)
+    return df
 
 def get_google_events(begin, end):
     service = get_calendar_service()
@@ -40,6 +36,7 @@ def get_google_events(begin, end):
     minTime = begin.isoformat() + 'Z'
     maxTime = end.isoformat() + 'Z'
 
+    cal_event_id = []
     cal_subject = []
     cal_start = []
     cal_end = []
@@ -53,20 +50,22 @@ def get_google_events(begin, end):
 
     for event in events:
         startStr = event['start'].get('dateTime', event['start'].get('date'))
-        endStr = event['end'].get('dateTime', event['end'].get('date'))
-        
+        endStr = event['end'].get('dateTime', event['start'].get('date'))
+
         try:
             category = event['colorId']
 
         except:
             category = None
 
+        cal_event_id.append(event['id'])
         cal_subject.append(event['summary'])
         cal_start.append(startStr.replace('T',' ')[:19])
         cal_end.append(endStr.replace('T',' ')[:19])
         cal_category.append(category)
 
-    df = pd.DataFrame({'subject': cal_subject,
+    df = pd.DataFrame({'event_id': cal_event_id,
+                       'subject': cal_subject,
                        'start': cal_start,
                        'end': cal_end,
                        'category': cal_category})
@@ -91,14 +90,19 @@ def main():
 
     google_events = get_google_events(begin, end)
 
-    full_merge = outlook_events.merge(google_events, on=['subject','start','end'], how='outer', indicator=True)
-    full_merge.to_excel('last_full_merge.xlsx')
+    merge_dictionary={"left_only":"missing", "right_only":"cancelled","both":"synced"}
 
-    left_only_merge = outlook_events.merge(google_events, on=['subject','start','end','category'], how='outer', indicator=True).loc[lambda x : x['_merge']=='left_only'].drop('_merge', axis='columns')
-    missing_events = left_only_merge.values
+    all_events_merged_df = outlook_events.merge(google_events, on=['subject','start','end','category'], how='outer', indicator=True)
+    all_events_merged_df['_merge'] = all_events_merged_df['_merge'].map(merge_dictionary)
+    all_events_merged_df.to_excel('last_all_events_merged_list.xlsx')
 
-    right_only_merge = Outlook_events.merge(google_events, on=['subject','start','end','category'], how='outer', indicator=True).loc[lambda x : x['_merge']=='right_only'].drop('_merge', axis='columns')
-    cancelled_events = right_only_merge.values
-    
+    missing_events_df = all_events_merged_df.loc[lambda x : x['_merge']=='missing'].drop(columns=['_merge','event_id'])
+    missing_events_df.to_excel('last_missing_event_list.xlsx')
+    missing_events = missing_events_df.values
+
+    cancelled_events_df = all_events_merged_df.loc[lambda x : x['_merge']=='cancelled'].drop(columns=['_merge'])
+    cancelled_events_df.to_excel('last_cancelled_event_list.xlsx')
+    cancelled_events = cancelled_events_df.values
+
 if __name__ == '__main__':
    main()

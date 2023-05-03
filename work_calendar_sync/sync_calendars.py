@@ -128,7 +128,7 @@ def create_google_events(missing_event_list):
 
 def delete_google_events(cancelled_event_list):
     service = get_calendar_service()
-    
+
     for event in cancelled_event_list:
         event_id = event[4]
         subject = event[0]
@@ -153,19 +153,24 @@ def main():
         os.remove('./token.pickle')
         google_events = get_google_events(begin, end)
 
-    full_merge = outlook_events.merge(google_events, on=['subject','start','end'], how='outer', indicator=True)
-    full_merge.to_excel('last_full_merge.xlsx')
+    merge_dictionary={"left_only":"missing", "right_only":"cancelled","both":"synced"}
 
-    left_only_merge = outlook_events.merge(google_events, on=['subject','start','end'], how='outer', indicator=True).loc[lambda x : x['_merge']=='left_only'].drop('_merge', axis='columns')
-    missing_events = left_only_merge.values
+    all_events_merged_df = outlook_events.merge(google_events, on=['subject','start','end','category'], how='outer', indicator=True)
+    all_events_merged_df['_merge'] = all_events_merged_df['_merge'].map(merge_dictionary)
+    all_events_merged_df.to_excel('last_all_events_merged_list.xlsx')
 
-    right_only_merge = outlook_events.merge(google_events, on=['subject','start','end'], how='outer', indicator=True).loc[lambda x : x['_merge']=='right_only'].drop('_merge', axis='columns')
-    cancelled_events = right_only_merge.values
+    missing_events_df = all_events_merged_df.loc[lambda x : x['_merge']=='missing'].drop(columns=['_merge','event_id'])
+    missing_events_df.to_excel('last_missing_event_list.xlsx')
+    missing_events = missing_events_df.values
+
+    cancelled_events_df = all_events_merged_df.loc[lambda x : x['_merge']=='cancelled'].drop(columns=['_merge'])
+    cancelled_events_df.to_excel('last_cancelled_event_list.xlsx')
+    cancelled_events = cancelled_events_df.values
 
     create_google_events(missing_events)
     delete_google_events(cancelled_events)
 
     print('Calendar sync complete...')
-    
+
 if __name__ == '__main__':
    main()
